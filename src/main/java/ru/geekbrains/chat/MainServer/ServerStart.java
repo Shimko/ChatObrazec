@@ -2,7 +2,7 @@ package ru.geekbrains.chat.MainServer;
 
 public class ServerStart {
     public static void main(String[] args) {
-        MainServer mainServer = new MainServer();
+        ServerMain mainServer = new ServerMain();
         mainServer.start();
     }
 }

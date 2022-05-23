@@ -6,21 +6,21 @@
 
 <VBox alignment="CENTER" spacing="20.0" xmlns="http://javafx.com/javafx/11.0.14-internal"
       xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.geekbrains.chat.client.HelloController">
+
     <HBox fx:id="upperPanel">
         <TextField fx:id="loginField" promptText="Логин" HBox.hgrow="ALWAYS" />
         <PasswordField fx:id="passwordField" promptText="Пароль" HBox.hgrow="ALWAYS" />
         <Button fx:id="enter" onAction="#auth" text="OK" />
+        <Button fx:id="register" text="REG" onAction="#register"/>
     </HBox>
-    <TextArea fx:id="textArea" editable="false" prefHeight="0.0" prefWidth="478.0" style="-fx-background-color: #00FFFF" VBox.vgrow="ALWAYS" />
-    <HBox fx:id="buttonPanel" managed="false" visible="false">
-        <TextField fx:id="textField" onKeyPressed="#keyListener" promptText="Input text" HBox.hgrow="ALWAYS" />
-        <Button fx:id="buttonSend" onAction="#sendMessage" style="-fx-background-color: #1E90FF" text="Send" textFill="#e8250cb2">
-         <font>
-            <Font name="System Italic" size="14.0" />
-         </font></Button>
-        <Button fx:id="buttonClear" onAction="#clearTextArea" style="-fx-background-color: #00FF00" text="Clear">
-         <font>
-            <Font name="System Bold Italic" size="13.0" />
-         </font></Button>
+
+
+    <HBox  VBox.vgrow="ALWAYS">
+
+        <TextArea fx:id="textArea" editable="false" VBox.vgrow="ALWAYS"/>
+        <HBox fx:id="bottomPanel" managed="false" visible="false"/>
+        <TextField fx:id="textField" HBox.hgrow="ALWAYS" promptText="Input Text Message..."
+                   onKeyPressed="#keyListener"/>
+        <Button fx:id="button" text="Send" onAction="#sendMessage" onKeyPressed="#keyListener"/>
     </HBox>
 </VBox>

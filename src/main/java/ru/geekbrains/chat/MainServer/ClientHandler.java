@@ -7,69 +7,90 @@ import java.net.Socket;
 
 public class ClientHandler {
     Socket socket;
-    MainServer server;
+    ServerMain server;
     DataOutputStream out;
     DataInputStream in;
 
-    public ClientHandler(Socket socket, MainServer mainServer) {
+    private String nickname;
+
+    public String getNickname() {
+        return nickname;
+    }
+
+    public ClientHandler(Socket socket, ServerMain serverMain) {
         this.socket = socket;
-        this.server = mainServer;
+        this.server = serverMain;
 
         try {
             in = new DataInputStream(socket.getInputStream());
             out = new DataOutputStream(socket.getOutputStream());
 
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        while (true) {
-                            String str = in.readUTF();
+            new Thread(() -> {
+                try {
 
-                            if (str.startsWith("/auth")) {
-                                String[] creds = str.split(" ");
-                                String nick = AuthServer.getNickByLoginPass(creds[1], creds[2]);
+                    while (true){
+                        String str = in.readUTF();
 
-                                if (nick != null) {
-                                    sendMsg("/authok");
-                                    server.subScribe(ClientHandler.this);
-                                    break;
-                                } else {
-                                    sendMsg("Wrong Login/Password");
-                                }
-                            }
-                        }
+                        if (str.startsWith("/auth")){
+                            String[] creds = str.split(" ");
+                            nickname = AuthServer.getNickByLoginPass(creds[1], creds[2]);
 
-                        while (true) {
-                            String str;
-                            str = in.readUTF();
-                            if (str.equals("/end")) {
-                                out.writeUTF("/end");
+                            if(isUserCorrect(nickname, server)){
                                 break;
                             }
-                            mainServer.sendToAll(str);
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        try {
-                            socket.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        try {
-                            in.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        try {
-                            out.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
+                        if (str.startsWith("/reg")){
+                            String[] creds = str.split(" ");
+                            String login = creds[1];
+                            String password = creds[2];
+                            if (server.isNickFree(login)){
+                                AuthServer.registerUser(login, password);
+                                nickname = login;
+                                if(isUserCorrect(login, server)) break;
+                            } else {
+                                sendMsg("Nickname is incorrect");
+                            }
                         }
                     }
-                    server.unSubScribe(ClientHandler.this);
+
+                    while (true) {
+                        String str;
+                        str = in.readUTF();
+                        if (str.equals("/end")) {
+                            out.writeUTF("/end");
+                            break;
+                        }
+                        if (str.startsWith("/show")){
+                            server.sendOnlineUsers();
+                        }
+                        serverMain.sendToAll(nickname + ": " + str);
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        out.writeUTF("/end");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        out.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
+                server.unsubscribe(ClientHandler.this);
             }).start();
 
         } catch (IOException e) {
@@ -77,7 +98,19 @@ public class ClientHandler {
         }
     }
 
-    public void sendMsg(String msg) {
+    private boolean isUserCorrect(String nickname, ServerMain server) {
+        if(server.isNickFree(nickname)){
+            server.subscribe(ClientHandler.this);
+            sendServiceMsg("/authok " + "Вы залогинены под ником: " + nickname);
+            server.sendOnlineUsers();
+            return true;
+        } else {
+            sendMsg("Wrong Login/Password");
+            return false;
+        }
+    }
+
+    public void sendMsg(String msg){
         System.out.println("Client send message: " + msg);
         try {
             out.writeUTF(msg + "\n");
@@ -86,19 +119,12 @@ public class ClientHandler {
         }
     }
 
-    public String getNickname() {
-        String str = null;
-        String nick = null;
+    public void sendServiceMsg(String msg){
+        System.out.println("Client send message: " + msg);
         try {
-            str = in.readUTF();
+            out.writeUTF(msg + "\n");
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        if (str.startsWith("/auth")) {
-            String[] creds = str.split(" ");
-            nick = AuthServer.getNickByLoginPass(creds[1], creds[2]);
-        }
-        return nick;
     }
 }
